@@ -2,7 +2,7 @@
 
 > Plays media documents
 
-<video autoplay loop src="/doc/screencap.webm?raw=true">Video playback not supported</video>
+![screencap](/doc/screencap.gif?raw=true)
 
 ## Installation
 
