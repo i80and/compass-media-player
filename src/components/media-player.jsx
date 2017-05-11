@@ -12,7 +12,7 @@ class MediaPlayerComponent extends React.Component {
     super(props)
     this.queryBar = global.hadronApp.appRegistry.getComponent('Query.QueryBar');
 
-    this.state = {videoURL: null, error: null};
+    this.state = {videoURLs: [], error: null};
   }
 
   componentDidMount() {
@@ -24,17 +24,18 @@ class MediaPlayerComponent extends React.Component {
   }
 
   handleStoreChange(storeState) {
-    global.window.videoBlob = storeState.videoBlob;
     console.log('Store change')
 
-    if (this.state.videoURL) {
-      URL.revokeObjectURL(this.state.videoURL);
+    for (const url of this.state.videoURLs) {
+      URL.revokeObjectURL(url);
     }
 
     this.setState({
-      videoURL: URL.createObjectURL(storeState.videoBlob),
+      videoURLs: storeState.videoBlobs.map((blob) => (blob === null) ? null : URL.createObjectURL(blob)),
       error: null
     });
+
+    console.log(this.state.videoURLs)
   }
 
   renderContent() {
@@ -46,16 +47,20 @@ class MediaPlayerComponent extends React.Component {
       );
     }
 
-    if (!this.state.videoURL) {
+    if (this.state.videoURLs.length === 0) {
       return null;
     }
-
-    console.log(this.state.videoURL)
 
     return (
       <div className="column-container">
         <div className="column main">
-          <video controls src={this.state.videoURL}>No video support</video>
+          {this.state.videoURLs.map((url) => {
+            if (url === null) {
+              return <div>Does not contain a playable video</div>
+            } else {
+              return <video controls src={url}>No video support</video>
+            }
+          })}
         </div>
       </div>
     );

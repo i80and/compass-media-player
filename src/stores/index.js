@@ -5,6 +5,14 @@ const toNS = require('mongodb-ns');
 
 const debug = require('debug')('mongodb-compass:stores:media-player');
 
+function isEBML(bin) {
+  const view = new Uint8Array(bin);
+  return view[0] === 0x1a &&
+         view[1] === 0x45 &&
+         view[2] === 0xdf &&
+         view[3] === 0xa3;
+}
+
 /**
  * Media Player store.
  */
@@ -27,7 +35,7 @@ const MediaPlayerStore = Reflux.createStore({
    * Initialize everything that is not part of the store's state.
    */
   init() {
-    this.state = {videoBlob: null};
+    this.state = {videoBlobs: []};
   },
 
   /**
@@ -69,7 +77,7 @@ const MediaPlayerStore = Reflux.createStore({
    */
   getInitialState() {
     return {
-      videoBlob: null
+      videoBlobs: []
     };
   },
 
@@ -90,7 +98,7 @@ const MediaPlayerStore = Reflux.createStore({
       sort: _.isEmpty(query.sort) ? null : _.pairs(query.sort),
       fields: query.project,
       skip: query.skip,
-      limit: 1,
+      limit: Math.min(5, (query.limit === undefined) ? 1 : query.limit),
       maxTimeMS: query.maxTimeMS,
     };
 
@@ -101,13 +109,21 @@ const MediaPlayerStore = Reflux.createStore({
       }
 
       if (documents.length === 0) {
-        this.state = {videoBlob: null};
+        this.state = {videoBlobs: []};
         this.trigger(this.state);
         return;
       }
 
-      const blob = new Blob([documents[0].data.buffer], {type: 'video/webm'})
-      this.state = {videoBlob: blob};
+      const blobs = []
+      for (const doc of documents) {
+        if (isEBML(doc.data.buffer)) {
+          blobs.push(new Blob([doc.data.buffer], {type: 'video/webm'}))
+        } else {
+          blobs.push(null)
+        }
+      }
+
+      this.state = {videoBlobs: blobs};
       this.trigger(this.state);
     });
   },
